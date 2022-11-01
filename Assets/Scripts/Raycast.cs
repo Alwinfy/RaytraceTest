@@ -37,7 +37,7 @@ public class Raycast : MonoBehaviour
                 var dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
                 var hit = Physics2D.Raycast(pos, dir, MaxDistance);
                 if (hit.collider != null) {
-                    castResults[i] = new CastResult.Hit(0, hit.point);
+                    castResults[i] = new CastResult.Hit(hit.collider.gameObject.GetHashCode(), hit.point);
                     numResults++;
                 } else {
                     castResults[i] = new CastResult.Miss();
@@ -65,6 +65,7 @@ public class Raycast : MonoBehaviour
                 list[0] = new CastResult.Collection(list[0].colliderID, new List<Vector2>(last.Concat(list[0].points)));
             }
 
+            // initial buffers for vtx/tri
             var vertices = new Vector3[5 * numResults];
             var triangles = new int[12 * (numResults - list.Count)];
             int vix = 0, tix = 0;
@@ -74,6 +75,7 @@ public class Raycast : MonoBehaviour
                     var p2 = coll.points[i];
                     var rot = p2 - p1;    
                     var edge = new Vector2(-rot.y, rot.x).normalized * LineWidth;
+                    // a "line" is actually a quad - take normal and compute edges
                     vertices[vix + 0] = p1 + edge;
                     vertices[vix + 1] = p1 - edge;
                     vertices[vix + 2] = p2 - edge;
@@ -85,6 +87,7 @@ public class Raycast : MonoBehaviour
                     triangles[tix + 4] = vix + 2;
                     triangles[tix + 5] = vix + 3;
                     if (i >= 2) {
+                        // insert joins between segments
                         vertices[vix + 4] = p1;
                         triangles[tix + 6] = vix + 0;
                         triangles[tix + 8] = vix - 2;
