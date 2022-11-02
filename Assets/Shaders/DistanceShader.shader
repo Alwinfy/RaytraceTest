@@ -31,7 +31,7 @@ Shader "Shaders/DistanceShader"
 
             struct v2f
             {
-                float2 uv : TEXCOORD0;
+                float3 uv : TEXCOORD0;
                 float4 vertex : SV_POSITION;
             };
 
@@ -44,8 +44,8 @@ Shader "Shaders/DistanceShader"
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex - _Position + float4(0, 0, _ZDepth, 0));
-                o.uv.x = (distance(v.vertex, _Position) - _NearDist) / (_FarDist - _NearDist);
-                o.uv.y = v.uv.y;
+                o.uv.z = (distance(v.vertex, _Position) - _NearDist) / (_FarDist - _NearDist);
+                o.uv.xy = v.uv.xy;
                 return o;
             }
 
@@ -54,8 +54,8 @@ Shader "Shaders/DistanceShader"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                fixed4 col = lerp(_NearColor, _FarColor, i.uv.x);
-                col[3] *= i.uv.y;
+                fixed4 col = lerp(_NearColor, _FarColor, i.uv.z);
+                col[3] *= i.uv.y * i.uv.x;
                 return col;
             }
             ENDCG

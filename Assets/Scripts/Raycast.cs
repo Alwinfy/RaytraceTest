@@ -49,42 +49,43 @@ public class Raycast : MonoBehaviour
                     castResults[i] = new CastResult.Miss();
                 }
             }
-            var list = new List<CastResult.Collection>();
+            var lineGroups = new List<CastResult.Collection>();
             CastResult lastVal = null;
             float thresh = ConnectThreshold * Mathf.PI * 2 / Span;
             foreach (var cast in castResults) {
                 var id = cast.Id();
                 if (cast is CastResult.Hit hit) {
                     var threshMul = (hit.point - pos).magnitude;
-                    if (list.Count == 0 || !(lastVal is CastResult res) || !res.IsNear(cast, thresh * threshMul)) {
-                        list.Add(new CastResult.Collection(hit.colliderID, new List<Vector2>()));
+                    if (lineGroups.Count == 0 || !(lastVal is CastResult res) || !res.IsNear(cast, thresh * threshMul)) {
+                        lineGroups.Add(new CastResult.Collection(hit.colliderID, new List<Vector2>()));
                     }
-                    list.Last().points.Add(hit.point);
+                    lineGroups.Last().points.Add(hit.point);
                 }
                 lastVal = cast;
             }
-            Debug.Log("[Ray] " + numResults + " vertices, " + list.Count + " sectors");
-            var threshMulLast = (list.Last().points.Last() - pos).magnitude;
-            if (list.Count > 1 && castResults[0].IsNear(castResults.Last(), thresh * threshMulLast)) {
-                var last = list.Last().points;
-                list.RemoveAt(list.Count - 1);
-                list[0] = new CastResult.Collection(list[0].colliderID, new List<Vector2>(last.Concat(list[0].points)));
+            Debug.Log("[Ray] " + numResults + " vertices, " + lineGroups.Count + " sectors");
+            var threshMulLast = (lineGroups.Last().points.Last() - pos).magnitude;
+            if (lineGroups.Count > 1 && castResults[0].IsNear(castResults.Last(), thresh * threshMulLast)) {
+                var last = lineGroups.Last().points;
+                lineGroups.RemoveAt(lineGroups.Count - 1);
+                lineGroups[0] = new CastResult.Collection(lineGroups[0].colliderID, new List<Vector2>(last.Concat(lineGroups[0].points)));
             }
 
             // initial buffers for vtx/tri
             var vertices = new Vector3[20 * numResults];
-            // u: currently unused, v: magnitude of light hitting this pt
+            // u: raw light, v: angle magnitude
             var normals = new Vector2[20 * numResults];
-            var triangles = new int[60 * (numResults - list.Count)];
+            var triangles = new int[60 * (numResults - lineGroups.Count)];
             var ix = new MeshIx(0, 0);
-            foreach (var coll in list) {
+            foreach (var coll in lineGroups) {
                 var points = coll.points;
                 var normalsIn = new Vector2[points.Count];
                 for (int i = 0; i < points.Count; i++) {
                     var tangent = (i == 0 ? points[i] : points[i - 1]) - (i == points.Count - 1 ? points[i] : points[i + 1]);
                     var offset = pos - points[i];
                     var illumination = Vector2.Dot(tangent.normalized, Vector2.Perpendicular(offset).normalized);
-                    normalsIn[i] = new Vector2(0, BasePower / offset.sqrMagnitude * illumination);
+                    if ((i == 0 || i == points.Count - 1) && points.Count >= 3) illumination /= 2;
+                    normalsIn[i] = new Vector2(illumination, BasePower / offset.sqrMagnitude);
                 }
                 ix = buildLine(ix, points, vertices, normalsIn, normals, triangles);
             }
