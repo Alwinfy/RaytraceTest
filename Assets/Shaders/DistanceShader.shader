@@ -13,6 +13,7 @@ Shader "Shaders/DistanceShader"
     {
         // No culling or depth
         Cull Off ZWrite Off ZTest Always
+        Blend SrcAlpha OneMinusSrcAlpha
 
         Pass
         {
