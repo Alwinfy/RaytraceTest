@@ -45,6 +45,7 @@ Shader "Shaders/DistanceShader"
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex - _Position + float4(0, 0, _ZDepth, 0));
                 o.uv.x = (distance(v.vertex, _Position) - _NearDist) / (_FarDist - _NearDist);
+                o.uv.y = v.uv.y;
                 return o;
             }
 
@@ -54,6 +55,7 @@ Shader "Shaders/DistanceShader"
             fixed4 frag (v2f i) : SV_Target
             {
                 fixed4 col = lerp(_NearColor, _FarColor, i.uv.x);
+                col[3] *= i.uv.y;
                 return col;
             }
             ENDCG
