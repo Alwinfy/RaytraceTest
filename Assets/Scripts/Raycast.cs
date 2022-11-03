@@ -16,6 +16,7 @@ public class Raycast : MonoBehaviour
 
     public float FadeDelay = 2f;
     public float FadeSpeed = 10f;
+    public Transform playerPos;
 
     private float lastFlash = 0;
 
@@ -26,7 +27,7 @@ public class Raycast : MonoBehaviour
         Camera.onPreRender += c => {
             if (self != null) {
                 var mat = GetComponent<MeshRenderer>().material;
-                mat.SetVector("_Position", transform.position);
+                mat.SetVector("_Position", playerPos.position);
                 mat.SetFloat("_Opacity", 1 / (1 + Mathf.Exp(FadeSpeed * (Time.time - lastFlash))));
             }
         };

@@ -404,6 +404,7 @@ MonoBehaviour:
   LineWidth: 0.08
   FadeDelay: 0.5
   FadeSpeed: 5
+  playerPos: {fileID: 1861253906}
 --- !u!33 &1034360868
 MeshFilter:
   m_ObjectHideFlags: 0

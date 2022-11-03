@@ -44,7 +44,7 @@ Shader "Shaders/DistanceShader"
             v2f vert (appdata v)
             {
                 v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex - _Position + float4(0, 0, _ZDepth, 0));
+                o.vertex = UnityObjectToClipPos(v.vertex /* - _Position */ + float4(0, 0, _ZDepth, 0));
                 o.uv.z = (distance(v.vertex, _Position) - _NearDist) / (_FarDist - _NearDist);
                 o.uv.xy = v.uv.xy;
                 return o;
