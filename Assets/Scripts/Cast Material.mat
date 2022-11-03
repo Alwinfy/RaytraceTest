@@ -40,11 +40,12 @@ Material:
     - _Cutoff: 0
     - _EnableExternalAlpha: 0
     - _FarDist: 10
-    - _NearDist: 5
+    - _NearDist: 2
+    - _Opacity: 1
     - _ZDepth: 0
     m_Colors:
     - _Color: {r: 0.18805772, g: 0.8490566, b: 0.1802243, a: 0.2}
-    - _FarColor: {r: 0, g: 0, b: 0, a: 1}
-    - _NearColor: {r: 0.77827966, g: 0.078431346, b: 0.78431374, a: 0.5686275}
+    - _FarColor: {r: 0.46720982, g: 1, b: 0, a: 1}
+    - _NearColor: {r: 0, g: 0.9696946, b: 1, a: 1}
     - _Position: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []

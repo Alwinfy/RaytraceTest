@@ -6,8 +6,9 @@ Shader "Shaders/DistanceShader"
         _FarColor ("FarColor", Color) = (1,1,1,1)
         _NearDist ("NearDist", Float) = 2
         _FarDist ("FarDist", Float) = 10
-        _Position ("Position", Vector) = (0,0,0,0)
         _ZDepth ("Z Depth", Float) = 1
+        _Position ("Position", Vector) = (0,0,0,0)
+        _Opacity ("Global Opacity", Float) = 1
     }
     SubShader
     {
@@ -51,11 +52,12 @@ Shader "Shaders/DistanceShader"
 
             fixed4 _NearColor;
             fixed4 _FarColor;
+            float _Opacity;
 
             fixed4 frag (v2f i) : SV_Target
             {
                 fixed4 col = lerp(_NearColor, _FarColor, i.uv.z);
-                col[3] *= i.uv.y * i.uv.x;
+                col[3] *= i.uv.y * i.uv.x * _Opacity;
                 return col;
             }
             ENDCG

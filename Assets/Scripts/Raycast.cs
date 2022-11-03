@@ -14,30 +14,30 @@ public class Raycast : MonoBehaviour
     public float CapTheta = 18;
     public float LineWidth = 0.08f;
 
+    public float FadeDelay = 2f;
+    public float FadeSpeed = 10f;
+
+    private float lastFlash = 0;
+
     // Start is called before the first frame update
     void Start()
     {
         var self = this;
         Camera.onPreRender += c => {
             if (self != null) {
-                GetComponent<MeshRenderer>().material.SetVector("_Position", transform.position);
+                var mat = GetComponent<MeshRenderer>().material;
+                mat.SetVector("_Position", transform.position);
+                mat.SetFloat("_Opacity", 1 / (1 + Mathf.Exp(FadeSpeed * (Time.time - lastFlash))));
             }
         };
     }
 
     record MeshIx(int verts, int tris);
 
-    // Update is called once per frame
-    void Update()
-    {
-        if (Input.GetMouseButton(1) || Input.GetMouseButtonDown(0)) {
-            RunRaycast();
-        }
-    }
-    void RunRaycast() {
+    public void RunRaycast(Vector2 pos) {
+            lastFlash = Time.time + FadeDelay;
             var castResults = new CastResult[Span];
             var numResults = 0;
-            Vector2 pos = transform.position;
             for (int i = 0; i < Span; i++) {
                 var angle = Mathf.PI * 2 * i / Span;
                 var dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
@@ -74,28 +74,28 @@ public class Raycast : MonoBehaviour
             // initial buffers for vtx/tri
             var vertices = new Vector3[20 * numResults];
             // u: raw light, v: angle magnitude
-            var normals = new Vector2[20 * numResults];
+            var vtxData = new Vector2[20 * numResults];
             var triangles = new int[60 * (numResults - lineGroups.Count)];
             var ix = new MeshIx(0, 0);
             foreach (var coll in lineGroups) {
                 var points = coll.points;
-                var normalsIn = new Vector2[points.Count];
+                var vtxDataIn = new Vector2[points.Count];
                 for (int i = 0; i < points.Count; i++) {
                     var tangent = (i == 0 ? points[i] : points[i - 1]) - (i == points.Count - 1 ? points[i] : points[i + 1]);
                     var offset = pos - points[i];
                     var illumination = Vector2.Dot(tangent.normalized, Vector2.Perpendicular(offset).normalized);
                     if ((i == 0 || i == points.Count - 1) && points.Count >= 3) illumination /= 2;
-                    normalsIn[i] = new Vector2(illumination, BasePower / offset.sqrMagnitude);
+                    vtxDataIn[i] = new Vector2(illumination, BasePower / offset.sqrMagnitude);
                 }
-                ix = buildLine(ix, points, vertices, normalsIn, normals, triangles);
+                ix = buildLine(ix, points, vertices, vtxDataIn, vtxData, triangles);
             }
             var mesh = new Mesh();
             mesh.SetVertices(vertices, 0, ix.verts);
             mesh.SetTriangles(triangles, 0, ix.tris, 0, true, 0);
-            mesh.SetUVs(0, normals, 0, ix.verts);
+            mesh.SetUVs(0, vtxData, 0, ix.verts);
             GetComponent<MeshFilter>().mesh = mesh;
     }
-    MeshIx buildLine(MeshIx ix, List<Vector2> points, Vector3[] vertices, Vector2[] normalsIn, Vector2[] normals, int[] triangles) {
+    MeshIx buildLine<T>(MeshIx ix, List<Vector2> points, Vector3[] vertices, T[] vtxDataIn, T[] vtxData, int[] triangles) {
         int vix = ix.verts, tix = ix.tris;
         var joinAngles = new float[points.Count];
         var joinOffsets = new float[points.Count];
@@ -118,10 +118,10 @@ public class Raycast : MonoBehaviour
             vertices[vix + 1] = p1 - edge;
             vertices[vix + 2] = p2 - edge;
             vertices[vix + 3] = p2 + edge;
-            normals[vix + 0] = normalsIn[0];
-            normals[vix + 1] = normalsIn[0];
-            normals[vix + 2] = normalsIn[1];
-            normals[vix + 3] = normalsIn[1];
+            vtxData[vix + 0] = vtxDataIn[0];
+            vtxData[vix + 1] = vtxDataIn[0];
+            vtxData[vix + 2] = vtxDataIn[1];
+            vtxData[vix + 3] = vtxDataIn[1];
             triangles[tix + 0] = vix + 0;
             triangles[tix + 1] = vix + 1;
             triangles[tix + 2] = vix + 2;
@@ -147,12 +147,12 @@ public class Raycast : MonoBehaviour
                 vertices[vix + 3] = (p2 - Mathf.Max(0, -jhigh) * normal) - edge;
                 vertices[vix + 4] = p2;
                 vertices[vix + 5] = (p2 - Mathf.Max(0, jhigh) * normal) + edge;
-                normals[vix + 0] = normalsIn[i - 1];
-                normals[vix + 1] = normalsIn[i - 1];
-                normals[vix + 2] = normalsIn[i - 1];
-                normals[vix + 3] = normalsIn[i];
-                normals[vix + 4] = normalsIn[i];
-                normals[vix + 5] = normalsIn[i];
+                vtxData[vix + 0] = vtxDataIn[i - 1];
+                vtxData[vix + 1] = vtxDataIn[i - 1];
+                vtxData[vix + 2] = vtxDataIn[i - 1];
+                vtxData[vix + 3] = vtxDataIn[i];
+                vtxData[vix + 4] = vtxDataIn[i];
+                vtxData[vix + 5] = vtxDataIn[i];
                 // hexagon fan
                 for (var j = 1; j <= 4; j++) {
                     triangles[tix + 0] = vix + 0;
@@ -171,7 +171,7 @@ public class Raycast : MonoBehaviour
                     if (joinSteps < 1) continue;
                     for (int j = 0; j <= joinSteps; j++) {
                         vertices[vix + j] = p1 - Rotate(activeEdge, -sangle * (j / joinStepsF));
-                        normals[vix + j] = normalsIn[i - 1];
+                        vtxData[vix + j] = vtxDataIn[i - 1];
                     }
                     for (int j = 0; j < joinSteps; j++) {
                         triangles[tix + 0] = p1Ix;
@@ -189,11 +189,11 @@ public class Raycast : MonoBehaviour
             var joinSteps = (int) joinStepsF;
             var edge = Vector2.Perpendicular((pos - prev).normalized) * LineWidth;
             vertices[vix] = pos;
-            normals[vix] = normalsIn[ix];
+            vtxData[vix] = vtxDataIn[ix];
             vix++;
             for (int i = 0; i <= joinSteps; i++) {
                 vertices[vix + i] = pos - Rotate(edge, Mathf.PI * (i / joinStepsF));
-                normals[vix + i] = normalsIn[ix];
+                vtxData[vix + i] = vtxDataIn[ix];
             }
             for (int j = 0; j < joinSteps; j++) {
                 triangles[tix + 0] = vix - 1;

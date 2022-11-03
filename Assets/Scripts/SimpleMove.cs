@@ -9,6 +9,7 @@ public class SimpleMove : MonoBehaviour
     public Vector2 targetSpeed;
     public float accel = .2f;
     public float topSpeed = 5f;
+    public Raycast raycaster;
     void Update()
     {
         float targetX = 0, targetY = 0;
@@ -21,5 +22,8 @@ public class SimpleMove : MonoBehaviour
         var accelMag = Mathf.Min(accelDelta.magnitude, accel * Time.deltaTime);
         speed += accelDelta.normalized * accelMag;
         this.transform.localPosition += new Vector3(speed.x, speed.y, 0) * Time.deltaTime;
+        if (Input.GetMouseButton(1) || Input.GetMouseButtonDown(0)) {
+            raycaster.RunRaycast(transform.position);
+        }
     }
 }
